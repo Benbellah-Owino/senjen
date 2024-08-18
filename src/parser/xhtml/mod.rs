@@ -20,7 +20,6 @@ where
         match i.unwrap() {
             XmlEvent::Characters(s) => {
                 let s = s.trim().replace("\\n", "").to_owned();
-                println!("{}", s);
                 for i in s.split_ascii_whitespace().into_iter() { // Skip punctuations
                     if i == "." || i== "," || i == "\"" || i == "'" || i == ")" || i == "("{
                         continue;
