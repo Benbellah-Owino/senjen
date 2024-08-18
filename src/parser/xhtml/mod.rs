@@ -6,11 +6,11 @@ use xml::EventReader;
 // #endregion:  --- imports
 
 /// Used to parse xhtml file
-pub fn parse_entire_file<P>(file_name: P) -> Result<Vec<String>, Error>
+pub fn parse_entire_file<P>(file_path: P) -> Result<Vec<String>, Error>
 where
     P: AsRef<Path>,
 {
-    let file = fs::File::open(file_name)?; // Read from the file
+    let file = fs::File::open(file_path)?; // Read from the file
 
     let reader = EventReader::new(file); // Parses the xhtml document
 

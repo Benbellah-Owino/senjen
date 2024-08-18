@@ -10,7 +10,7 @@ use std::{
 };
 use xml::{reader::XmlEvent, EventReader};
 
-use crate::store::Store;
+use crate::store::{ToStore, TokenStore};
 // #endregion:  --- imports
 
 // #region:     --- modules
@@ -57,9 +57,10 @@ enum FileType {}
 // #endregion:  --- XHTML Parser
 
 // #region:     --- Json
-pub fn save_to_json(tokens: &str) -> Result<(), Error>{
+pub fn save_to_json(tokens: &TokenStore) -> Result<(), Error>{
     let mut new_file = File::create("tokens.json")?;
-    new_file.write_all(tokens.as_bytes())?;
+    // new_file.write_all(tokens.as_bytes())?;
+    serde_json::to_writer(new_file, tokens);
     Ok(())
 }
 // #endregion:  --- Json

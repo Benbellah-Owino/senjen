@@ -1,12 +1,13 @@
 #![allow(unused)]
 
-use std::collections::HashMap;
+use std::{collections::HashMap, fs::File, io::{self, Read}, path::Path};
 
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 
 // #region:     --- Type Def
-type token_store<'a> = Vec<(&'a String, &'a i64)>;
+pub type TokenStoreRef<'a> = Vec<(&'a String, &'a i64)>;
+pub type TokenStore = HashMap<String, i64>;
 // #endregion:  --- Type Def
 
 // #region:     ---
@@ -17,14 +18,18 @@ type token_store<'a> = Vec<(&'a String, &'a i64)>;
 // #endregion:  ---
 
 #[derive(Debug, Serialize)]
-pub struct Store<'a> {
-    pub content: token_store<'a>,
+pub struct ToStore<'a> {
+    pub content: TokenStoreRef<'a>,
 }
 
-impl<'a> Store<'a> {
+#[derive(Debug,Deserialize)]
+pub struct FromStore {
+    pub content: TokenStore,
+}
+impl<'a> ToStore<'a> {
     // Should probably rename
-    pub fn new(content: Vec<String>, file_name: &str) -> String {
-        let mut store: HashMap<String, i64> = HashMap::new();
+    pub fn new(content: Vec<String>, file_path: &str) -> TokenStore{
+        let mut store: TokenStore = HashMap::new();
         // Get the frequency of each word
         for s in content {
             if store.contains_key(&s) {
@@ -35,7 +40,7 @@ impl<'a> Store<'a> {
         }
 
         // Store it into a vector for ordering
-        let mut store: token_store = store.iter().collect::<Vec<_>>();
+        let mut store: TokenStoreRef = store.iter().collect::<Vec<_>>();
         store.sort_by(|a, b| {
             let a = *a.1;
             let b = *b.1;
@@ -44,15 +49,15 @@ impl<'a> Store<'a> {
         println!("{:?}", store);
         println!("   >>---------------------------| save_to_json() | ----------------------");
         let mut builder = String::new();
+        let mut for_save: TokenStore = HashMap::new();
         for s in store {
             println!("{:?}", s);
-            let s = format!(" {} : {}, ", s.0, s.1);
-            builder.push_str(&s);
+            for_save.insert(s.0.to_string(), s.1.to_owned());
         }
-        let store = format!("{file_name} : {{ {builder} }}");
-        let for_save = json!(store);
-        println!("{for_save}");
-        return for_save.to_string();
+        // let store = format!("{file_path} : {{ {builder} }}");
+        // let for_save = json!(store);
+        // println!("{for_save}");
+        return for_save;
         //store.sort_by_key(|a,b| a<b);
         // for i in store.into_iter().take(10) {
         //     println!("{:?}", i);
@@ -61,4 +66,26 @@ impl<'a> Store<'a> {
     }
 
     // TODO: Read from file
+}
+
+
+impl FromStore{
+
+    pub fn read_from_json<P>(file_path: P) -> Result<TokenStore, io::Error>
+    where P: AsRef<Path>{
+        let mut json_file = File::open(file_path)?;
+        let mut buffer = String::new();
+        json_file.read_to_string(&mut buffer);
+        
+        // let tokens = buffer.split(":").collect::<Vec<&str>>()[1..].to_vec();
+
+        // println!("{:?}", buffer);
+        let tokens: TokenStore = serde_json::from_str(&buffer).unwrap();
+        // println!("{:?}", tokens);
+        for i in &tokens{
+            println!("{:?}", i);
+        }
+        
+        Ok(tokens)
+    }
 }
