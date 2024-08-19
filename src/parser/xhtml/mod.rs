@@ -6,7 +6,7 @@ use xml::EventReader;
 // #endregion:  --- imports
 
 /// Used to parse xhtml file
-pub fn parse_entire_file<P>(file_path: P) -> Result<Vec<String>, Error>
+pub fn parse_entire_file<P>(file_path: &P) -> Result<Vec<String>, Error>
 where
     P: AsRef<Path>,
 {
