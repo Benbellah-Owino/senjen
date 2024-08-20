@@ -1,9 +1,9 @@
-#![allow(unused)]
+// #![allow(unused)]
 
-use std::{collections::HashMap, ffi::OsString, fs::{self, File}, io::{self, Read}, path::{Path, PathBuf}};
+use std::{collections::HashMap, fs::{self, File}, io::{self, Read}, path::{Path, PathBuf}};
 
 use serde::{Deserialize, Serialize};
-use serde_json::json;
+use tracing::info;
 
 use crate::parser::xhtml::parse_entire_file;
 
@@ -23,17 +23,17 @@ pub type FileStore = HashMap<PathBuf, TokenStore>;
 // #endregion:  ---
 
 #[derive(Debug, Serialize)]
-pub struct ToStore<'a> {
-    pub content: TokenStoreRef<'a>,
+pub struct ToStore {
+    pub content: TokenStore,
 }
 
 #[derive(Debug,Deserialize)]
 pub struct FromStore {
     pub content: TokenStore,
 }
-impl<'a> ToStore<'a> {
+impl ToStore{
     // Should probably rename
-    pub fn new(content: Vec<String>) -> TokenStore{
+    pub fn tokenizer(content: Vec<String>) -> TokenStore{
         let mut store: TokenStore = HashMap::new();
         // Get the frequency of each word
         for s in content {
@@ -44,30 +44,19 @@ impl<'a> ToStore<'a> {
             }
         }
 
-        // Store it into a vector for ordering
-        let mut store: TokenStoreRef = store.iter().collect::<Vec<_>>();
+        let mut store: TokenStoreRef = store.iter().collect::<Vec<_>>(); // Store it into a vector for ordering
         store.sort_by(|a, b| {
             let a = *a.1;
             let b = *b.1;
             b.cmp(&a)
-        });
-        // println!("{:?}", store);
-        // println!("   >>---------------------------| save_to_json() | ----------------------");
-        let mut builder = String::new();
+        }); // Sort it
+        
         let mut for_save: TokenStore = HashMap::new();
         for s in store {
-
             for_save.insert(s.0.to_string(), s.1.to_owned());
-        }
-        // let store = format!("{file_path} : {{ {builder} }}");
-        // let for_save = json!(store);
-        // println!("{for_save}");
+        } // Create token store
+
         return for_save;
-        //store.sort_by_key(|a,b| a<b);
-        // for i in store.into_iter().take(10) {
-        //     println!("{:?}", i);
-        // }
-        // TODO: Store this in a json document and document the functions
     }
 
     // TODO: Read from file
@@ -75,56 +64,52 @@ impl<'a> ToStore<'a> {
 
 
 impl FromStore{
-
+    
+    /// Reads the json file containting the tokens and returns a hashmap containing filenames and the associated tokens
     pub fn read_from_json<P>(file_path: P) -> Result<FileStore, io::Error>
     where P: AsRef<Path>{
-        let mut json_file = File::open(file_path)?;
-        let mut buffer = String::new();
-        json_file.read_to_string(&mut buffer);
         
-        // let tokens = buffer.split(":").collect::<Vec<&str>>()[1..].to_vec();
-
-        // println!("{:?}", buffer);
-        let tokens: FileStore = serde_json::from_str(&buffer).unwrap();
-        // println!("{:?}", tokens);
-        for i in &tokens{
-            println!("{:?}", i);
-        }
+        let mut json_file = File::open(file_path)?; 
+        let mut buffer = String::new();
+        json_file.read_to_string(&mut buffer)?; //Read file contents to string
+        
+        let tokens: FileStore = serde_json::from_str(&buffer).unwrap(); // Convert the json tokens to rust suitable format(Hashmap)
         
         Ok(tokens)
     }
 }
 
+/// Iterates over the files in a directory and converts the words into tokens
 pub fn get_dir_tokens<P>(dir_path: P) -> Result< FileStore,io::Error>
 where P: AsRef<Path> {
-    let dir = fs::read_dir(dir_path).unwrap();
-    let mut file_store: FileStore = HashMap::new();
-    for entry in dir{
+    let dir = fs::read_dir(dir_path).unwrap(); // Get the files in a directory
+    let mut file_store: FileStore = HashMap::new(); // Stores the tokens of each files as the values to the filename
+
+    for entry in dir{ // Iterate over the directory files
         let e = entry?.path();
 
-        if let Ok(content) = parse_entire_file(&e){
-            let ts = ToStore::new(content);
-            let e = e;
-            file_store.insert(e, ts);
+        info!("Parsing : {:?}", &e);
+        if let Ok(content) = parse_entire_file(&e){ //Get the words from document
+            let ts = ToStore::tokenizer(content); // Tokenize each word
+            file_store.insert(e, ts); // Store the relationship between the tokens and the files
         }else{
             continue;
         };
     }
 
-    println!("\n --------------------File Names---------------------------");
-    for (k, v) in &file_store{
-        println!("{:#?}", k);
-    }
+    // println!("\n --------------------| File Names |---------------------------");
+    // for (k, v) in &file_store{
+    //     println!("{:#?}", k);
+    // }
 
-    // println!("{:#?}", file_store);
     Ok(file_store)
 }
 
+/// Save the tokens to a json file
 pub fn save_to_json(for_save: FileStore) -> Result<(), io::Error>{
-     let mut new_file = File::create("tokens.json")?;
-    // new_file.write_all(tokens.as_bytes())?;
+    let new_file = File::create("tokens.json")?;
     println!("{:#?}", for_save);
-    serde_json::to_writer_pretty(new_file, &for_save);
+    serde_json::to_writer_pretty(new_file, &for_save)?;
     
     Ok(())
 }

@@ -51,16 +51,3 @@ impl From<io::Error> for Error {
 // #endregion:   Type Definitions
 
 enum FileType {}
-
-// #region:     --- XHTML Parser
-
-// #endregion:  --- XHTML Parser
-
-// #region:     --- Json
-pub fn save_to_json(tokens: &TokenStore) -> Result<(), Error>{
-    let mut new_file = File::create("tokens.json")?;
-    // new_file.write_all(tokens.as_bytes())?;
-    serde_json::to_writer(new_file, tokens);
-    Ok(())
-}
-// #endregion:  --- Json

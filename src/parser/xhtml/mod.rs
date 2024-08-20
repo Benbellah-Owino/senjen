@@ -1,11 +1,12 @@
 // #region:     --- imports
 use crate::parser::Error;
 use std::{fs, path::Path};
+use tracing::{debug, info};
 use xml::reader::XmlEvent;
 use xml::EventReader;
 // #endregion:  --- imports
 
-/// Used to parse xhtml file
+/// Extracts all the relevant texts from an xhml file and returns a vector of the tokens
 pub fn parse_entire_file<P>(file_path: &P) -> Result<Vec<String>, Error>
 where
     P: AsRef<Path>,
