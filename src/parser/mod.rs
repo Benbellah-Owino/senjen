@@ -19,8 +19,6 @@ pub mod xhtml;
 
 // #region:     ---
 // #endregion:  ---
-// #region:     ---
-// #endregion:  ---
 
 // #region:     ---
 // #endregion:  ---

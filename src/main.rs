@@ -1,6 +1,6 @@
 
-use p02_senjen::{parser::xhtml::parse_entire_file, store::{get_dir_tokens, save_to_json, FromStore, ToStore}};
-use tracing::subscriber;
+use p02_senjen::{parser::xhtml::parse_entire_file, store::{get_dir_tokens, save_to_json, tf_idf_calc, FromStore, ToStore}};
+use tracing::{debug, info, subscriber};
 use tracing_subscriber::FmtSubscriber;
 use clap::{Args, Parser, Subcommand};
 #[derive(Parser, Debug)]
@@ -46,7 +46,13 @@ fn main() {
     // TODO: Add the getting of filenames where a term occurs
     match args.action{
         Action::Index(act) => {
+            info!("Parsing tokens");
             let i = get_dir_tokens(&act.dir_name).unwrap();
+
+            info!("Calculating token numbers");
+            let i = tf_idf_calc(i);
+            
+            info!("Saving tokens to json");
             save_to_json(i).unwrap();
         },
         Action::Retrieve(act) => {
